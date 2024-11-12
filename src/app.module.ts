@@ -25,7 +25,7 @@ console.log('DB_NAME:', process.env.DB_NAME)
       synchronize: true,
     }),
 
-    SequelizeModule.forFeature([User]), // Ensure User is included here as well
+    SequelizeModule.forFeature([User]),
   ],
 })
 export class AppModule {}
