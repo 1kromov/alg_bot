@@ -5,7 +5,6 @@ import { User } from '../models/user.model.js'
 import { sendNextQuestion, calculateScoreAndShowResult } from '../actions/start.js'
 import { Question } from '../models/question.model.js'
 import { userProgress } from './progress.js'
-import { Attributes, CreationAttributes } from 'sequelize'
 import { UserAnswer } from '../models/user_answer.model.js'
 
 dotenv.config()
@@ -29,7 +28,7 @@ bot.start(async (ctx) => {
     return
   }
 
-  await ctx.replyWithPhoto('AgACAgIAAxkBAAObZzSuMNpz9G3gaidZY3QP1xoqMgkAApfkMRs7XqBJo5SbdS8Qd5YBAAMCAANzAAM2BA', {
+  await ctx.replyWithPhoto('AgACAgIAAxkBAAIZ8mc14hzUw8bxIPmYU2lQBQxOrRFFAAKX5DEbO16gSZp-OQOKKUJIAQADAgADcwADNgQ', {
     caption:
       "🎓 <b>Namangandagi ALGORITM IT o'quv markazi, yoshlar uchun 222 million so'mlik grand e'lon qiladi!</b>\n\n" +
       "🏆 <b>Grant tanlovi g'oliblari “ALGORITM maxsus sertifikatlari va qo'shimcha sovg'alar bilan taqdirlanishadi.</b>\n\n" +
@@ -58,11 +57,6 @@ bot.start(async (ctx) => {
   )
 })
 
-bot.on('photo', (ctx) => {
-  console.log('File ID:', ctx.message.photo[0].file_id)
-  ctx.reply('Got the file ID!')
-})
-
 bot.on('text', async (ctx) => {
   const userId = String(ctx.from.id)
   const userData = userProgress.get(userId)
@@ -81,7 +75,6 @@ bot.on('text', async (ctx) => {
         '👨🏻‍💻 Ro’yxatdan o’tish uchun raqamingizni tasdiqlashingiz lozim👇 <i>(Masalan: 998938888038)</i>',
         { parse_mode: 'HTML' },
       )
-      // await ctx.reply('👨🏻‍💻 Ro’yxatdan o’tish uchun raqamingizni tasdiqlashingiz lozim👇')
       break
 
     case 'phone': {
@@ -101,7 +94,7 @@ bot.on('text', async (ctx) => {
 
       userData.tempData!.phone = phone
       userData.step = 'age'
-      userProgress.set(userId, userData) // Save progress
+      userProgress.set(userId, userData)
       await ctx.reply('3. Yoshingiz nechida?')
       break
     }
@@ -115,8 +108,8 @@ bot.on('text', async (ctx) => {
 
       userData.tempData!.age = age
       userData.step = 'region'
-      userProgress.set(userId, userData) // Save progress
-      await ctx.reply('🏠Yashash manzilingiz qayerda?')
+      userProgress.set(userId, userData)
+      await ctx.reply('🏠 Yashash manzilingiz qayerda?')
       break
     }
 
@@ -156,9 +149,21 @@ bot.on('text', async (ctx) => {
         userData.isQuizActive = true
         userData.step = 'exam'
         userData.questions = await Question.findAll({ order: [['id', 'ASC']] })
+
+        // Ensure the index is set to start from the beginning
         userData.currentQuestionIndex = 0
+
+        // Update progress to reflect the quiz start
         userProgress.set(userId, userData)
-        await sendNextQuestion(ctx, userId)
+
+        if (userData.questions.length > 0) {
+          await sendNextQuestion(ctx, userId)
+        } else {
+          await ctx.reply("Savollar mavjud emas. Iltimos, keyinroq qayta urinib ko'ring.")
+          userData.isQuizActive = false
+          userData.step = ''
+          userProgress.delete(userId) // Clear progress if no questions are available
+        }
       }
       break
 
@@ -178,9 +183,15 @@ bot.on('text', async (ctx) => {
           return
         }
 
-        await sendNextQuestion(ctx, userId)
-      } else {
-        await ctx.reply('Kutilmagan buyruq.')
+        // Check if all questions have been answered
+        if (userData.currentQuestionIndex >= userData.questions.length) {
+          userData.isQuizActive = false
+          userData.step = ''
+          await calculateScoreAndShowResult(ctx, userId) // Show final results
+          userProgress.delete(userId) // Clear progress after finishing
+        } else {
+          await sendNextQuestion(ctx, userId) // Send the next question
+        }
       }
       break
   }

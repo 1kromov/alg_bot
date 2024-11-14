@@ -3,45 +3,72 @@ import { UserAnswer } from '../models/user_answer.model.js'
 import { Question } from '../models/question.model.js'
 import { userProgress } from '../core/progress.js'
 
+// export async function sendNextQuestion(ctx: any, userId: string) {
+//   const userData = userProgress.get(userId)
+//   if (!userData) return
+
+//   // Savol mavjudligini tekshirish
+//   if (userData.currentQuestionIndex >= userData.questions.length) {
+//     userData.isQuizActive = false
+//     userData.step = ''
+//     await calculateScoreAndShowResult(ctx, userId)
+//     userProgress.delete(userId) // Clear progress after finishing
+//     return
+//   }
+
+//   const question = userData.questions[userData.currentQuestionIndex]
+
+//   // Agar savol mavjud bo'lmasa, foydalanuvchiga xatolik haqida xabar beriladi
+//   if (!question) {
+//     await ctx.reply("Savolni olishda xato yuz berdi. Iltimos, keyinroq qaytib ko'ring.")
+//     return
+//   }
+
+//   // Savolni yuborish
+//   await ctx.reply(
+//     `${userData.currentQuestionIndex + 1}. ${question.getDataValue('text')}`,
+//     Markup.keyboard([
+//       [question.getDataValue('option1')],
+//       [question.getDataValue('option2')],
+//       [question.getDataValue('option3')],
+//       [question.getDataValue('option4')],
+//     ])
+//       .oneTime()
+//       .resize(),
+//   )
+
+//   // Savol ko'rsatilgandan so'ng indeksni oshirish
+//   userData.currentQuestionIndex++
+//   userProgress.set(userId, userData)
+// }
+
 export async function sendNextQuestion(ctx: any, userId: string) {
   const userData = userProgress.get(userId)
   if (!userData) return
 
-  // Savol mavjudligini tekshirish
+  // Check if there are more questions
   if (userData.currentQuestionIndex >= userData.questions.length) {
     userData.isQuizActive = false
     userData.step = ''
-    await calculateScoreAndShowResult(ctx, userId)
+    await calculateScoreAndShowResult(ctx, userId) // Show final results
     userProgress.delete(userId) // Clear progress after finishing
     return
   }
 
   const question = userData.questions[userData.currentQuestionIndex]
 
-  // Agar savol mavjud bo'lmasa, foydalanuvchiga xatolik haqida xabar beriladi
-  if (!question) {
-    await ctx.reply("Savolni olishda xato yuz berdi. Iltimos, keyinroq qaytib ko'ring.")
-    return
-  }
-
-  // Savolni yuborish
+  // Send the question to the user
   await ctx.reply(
-    `${userData.currentQuestionIndex + 1}. ${question.getDataValue('text')}`,
-    Markup.keyboard([
-      [question.getDataValue('option1')],
-      [question.getDataValue('option2')],
-      [question.getDataValue('option3')],
-      [question.getDataValue('option4')],
-    ])
+    `${userData.currentQuestionIndex + 1}. ${question.text}`,
+    Markup.keyboard([[question.option1], [question.option2], [question.option3], [question.option4]])
       .oneTime()
       .resize(),
   )
 
-  // Savol ko'rsatilgandan so'ng indeksni oshirish
+  // Increment the index after sending the question
   userData.currentQuestionIndex++
   userProgress.set(userId, userData)
 }
-
 export async function calculateScoreAndShowResult(ctx: any, userId: string) {
   const userAnswers = await UserAnswer.findAll({ where: { user_id: userId } })
   let correctCount = 0
