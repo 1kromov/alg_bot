@@ -8,7 +8,8 @@
     "build": "rimraf ./build && tsc",
     "start": "node build/main.js",
     "lint": "npx eslint ./src",
-    "format": "npx eslint ./src --fix"
+    "format": "npx eslint ./src --fix",
+    "deploy": "npm run build && npm start && npm run seed:questions"
   },
   "dependencies": {
     "@nestjs/common": "^10.4.7",
