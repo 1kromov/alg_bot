@@ -1,4 +1,3 @@
-// main.ts
 import dotenv from 'dotenv'
 dotenv.config()
 
